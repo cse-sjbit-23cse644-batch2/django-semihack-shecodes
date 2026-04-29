@@ -1,0 +1,517 @@
+{% extends 'curriculum/base.html' %}
+
+{% block title %}HOD Dashboard - Complete Control Center{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hod-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    .hod-stat-card {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        transition: transform 0.3s;
+        cursor: pointer;
+    }
+    .hod-stat-card:hover {
+        transform: translateY(-5px);
+    }
+    .hod-stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+    }
+    .pending-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-left: 4px solid #ffc107;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+    .pending-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+    .approved-card {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-left: 4px solid #28a745;
+    }
+    .btn-final-approve {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 25px;
+    }
+    .btn-final-approve:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    .btn-download-pdf {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        border: none;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 12px;
+    }
+    .approval-timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    .approval-timeline::before {
+        content: '';
+        position: absolute;
+        left: 10px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dee2e6;
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 25px;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -24px;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #667eea;
+    }
+    .timeline-item.approved::before {
+        background: #28a745;
+    }
+    .timeline-item.pending::before {
+        background: #ffc107;
+    }
+    .preview-modal .modal-body {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    .pdf-preview {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        font-family: 'Times New Roman', serif;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="bg-gradient-primary text-white p-4 rounded" style="background: linear-gradient(135deg, #1e3c72, #2a5298);">
+                <h2><i class="fas fa-gavel me-2"></i> Head of Department Dashboard</h2>
+                <p class="mb-0">Final approval authority for syllabus. Review BOS-approved courses and publish official syllabi.</p>
+                <small class="mt-2 d-block">
+                    <i class="fas fa-info-circle me-1"></i> 
+                    <strong>Your Role:</strong> You have the final say. Approve courses to generate official PDF syllabi.
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="hod-stats-grid">
+        <div class="hod-stat-card">
+            <div class="hod-stat-number">{{ stats.pending }}</div>
+            <div>Pending Final Approval</div>
+            <small>Awaiting your decision</small>
+        </div>
+        <div class="hod-stat-card" style="background: linear-gradient(135deg, #28a745, #20c997);">
+            <div class="hod-stat-number">{{ stats.approved }}</div>
+            <div>Published Syllabi</div>
+            <small>PDF generated</small>
+        </div>
+        <div class="hod-stat-card" style="background: linear-gradient(135deg, #17a2b8, #138496);">
+            <div class="hod-stat-number">{{ stats.total }}</div>
+            <div>Total Reviewed</div>
+            <small>All time</small>
+        </div>
+        <div class="hod-stat-card" style="background: linear-gradient(135deg, #fd7e14, #e8590c);">
+            <div class="hod-stat-number">{{ stats.pending|add:stats.approved }}</div>
+            <div>Active Courses</div>
+            <small>This semester</small>
+        </div>
+    </div>
+
+    <!-- Main Content Tabs -->
+    <div class="card">
+        <div class="card-header bg-white">
+            <ul class="nav nav-tabs card-header-tabs" id="hodTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pendingTab">
+                        <i class="fas fa-clock me-1"></i> Pending Approval 
+                        {% if stats.pending > 0 %}<span class="badge bg-warning ms-1">{{ stats.pending }}</span>{% endif %}
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#approvedTab">
+                        <i class="fas fa-check-circle me-1"></i> Published Syllabi
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#statisticsTab">
+                        <i class="fas fa-chart-bar me-1"></i> Statistics
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content">
+                <!-- Pending Approval Tab -->
+                <div class="tab-pane fade show active" id="pendingTab">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <input type="text" id="searchPending" class="form-control mb-3" placeholder="🔍 Search by course code, title, or faculty...">
+                        </div>
+                    </div>
+                    <div id="pendingCoursesList">
+                        {% for course in pending_courses %}
+                        <div class="pending-card" data-code="{{ course.course_code }}" data-title="{{ course.course_title }}" data-faculty="{{ course.created_by.get_full_name }}">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <h5 class="mb-1">{{ course.course_code }} - {{ course.course_title }}</h5>
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>{{ course.created_by.get_full_name }} | 
+                                        <i class="fas fa-calendar me-1"></i>BOS Approved: {{ course.bos_approved_at|date:"Y-m-d" }}
+                                    </small>
+                                </div>
+                                <div class="col-md-3">
+                                    <span class="badge bg-info">Semester {{ course.semester }}</span>
+                                    <span class="badge bg-secondary">{{ course.credits }} Credits</span>
+                                    <span class="badge bg-success">BOS Approved ✓</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="small">
+                                        <i class="fas fa-check-circle text-success"></i> BOS: {{ course.bos_approved_by.get_full_name|default:"BOS Member" }}<br>
+                                        <i class="fas fa-clock text-info"></i> Waiting since {{ course.bos_approved_at|timesince }} ago
+                                    </div>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <button class="btn btn-final-approve btn-sm" onclick="finalReview({{ course.id }})">
+                                        <i class="fas fa-check-circle"></i> Final Review
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-check-double fa-4x text-success mb-3"></i>
+                            <h5>No Pending Approvals</h5>
+                            <p>All BOS-approved courses have been published. Great work!</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Published Syllabi Tab -->
+                <div class="tab-pane fade" id="approvedTab">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Course Code</th>
+                                    <th>Course Title</th>
+                                    <th>Semester</th>
+                                    <th>Faculty</th>
+                                    <th>Approved On</th>
+                                    <th>PDF</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for course in approved_courses %}
+                                <tr>
+                                    <td><strong>{{ course.course_code }}</strong></td>
+                                    <td>{{ course.course_title }}</td>
+                                    <td>{{ course.semester }}</td>
+                                    <td>{{ course.created_by.get_full_name }}</td>
+                                    <td>{{ course.hod_approved_at|date:"Y-m-d" }}</td>
+                                    <td>
+                                        {% if course.pdf_file %}
+                                        <span class="badge bg-success"><i class="fas fa-file-pdf"></i> Generated</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'download_pdf' course.id %}" class="btn btn-download-pdf btn-sm">
+                                            <i class="fas fa-download"></i> Download PDF
+                                        </a>
+                                        <button class="btn btn-sm btn-info" onclick="viewPublishedSyllabus({{ course.id }})">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="7" class="text-center">No published syllabi yet</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Statistics Tab -->
+                <div class="tab-pane fade" id="statisticsTab">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <canvas id="approvalChart" width="400" height="300"></canvas>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Department Statistics</h6>
+                                    <table class="table table-sm">
+                                        <tr><td>Total Courses Reviewed:</td><td><strong>{{ stats.total }}</strong></td></tr>
+                                        <tr><td>Approved & Published:</td><td><strong>{{ stats.approved }}</strong></td></tr>
+                                        <tr><td>Pending Final Approval:</td><td><strong>{{ stats.pending }}</strong></td></tr>
+                                        <tr><td>Average Review Time:</td><td><strong>2.5 days</strong></td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Final Review Modal -->
+<div class="modal fade" id="finalReviewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #1e3c72, #2a5298); color: white;">
+                <h5 class="modal-title"><i class="fas fa-gavel me-2"></i> Final Review & Approval</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body preview-modal" id="finalReviewContent">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary"></div>
+                    <p class="mt-2">Loading course details...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Syllabus Modal -->
+<div class="modal fade" id="viewSyllabusModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Published Syllabus</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pdf-preview" id="syllabusPreviewContent"></div>
+            <div class="modal-footer">
+                <a href="#" id="downloadPdfLink" class="btn btn-danger">Download PDF</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentCourseId = null;
+
+// Search filter for pending courses
+$('#searchPending').on('keyup', function() {
+    let search = $(this).val().toLowerCase();
+    $('.pending-card').each(function() {
+        let code = $(this).data('code').toLowerCase();
+        let title = $(this).data('title').toLowerCase();
+        let faculty = $(this).data('faculty').toLowerCase();
+        if (code.includes(search) || title.includes(search) || faculty.includes(search)) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+});
+
+// Final Review Function
+function finalReview(courseId) {
+    currentCourseId = courseId;
+    $.get(`/curriculum/api/course/${courseId}/full/`, function(data) {
+        let approvalTimeline = getApprovalTimeline(data);
+        
+        let html = `
+            <div class="row">
+                <div class="col-md-7">
+                    <h6><i class="fas fa-info-circle"></i> Course Details</h6>
+                    <table class="table table-bordered table-sm">
+                        <tr><th>Course Code</th><td>${data.course_code}</td></tr>
+                        <tr><th>Course Title</th><td>${data.course_title}</td></tr>
+                        <tr><th>Department</th><td>${data.department}</td></tr>
+                        <tr><th>Semester</th><td>${data.semester}</td></tr>
+                        <tr><th>Credits</th><td>${data.credits}</td></tr>
+                        <tr><th>Teaching Hours</th><td>L:${data.lecture_hours} T:${data.tutorial_hours} P:${data.practical_hours}</td></tr>
+                        <tr><th>Total Hours</th><td>${data.total_hours}</td></tr>
+                        <tr><th>Assessment</th><td>CIE:${data.cie_marks} | SEE:${data.see_marks}</td></tr>
+                    </table>
+                    
+                    <h6 class="mt-3"><i class="fas fa-bullseye"></i> Course Objectives</h6>
+                    <div class="p-2 bg-light rounded small">${data.course_objectives || 'Not specified'}</div>
+                    
+                    <h6 class="mt-3"><i class="fas fa-layer-group"></i> Modules</h6>
+                    ${data.modules && data.modules.length ? data.modules.map(m => `
+                        <div class="border-bottom mb-2 pb-2">
+                            <strong>Module ${m.module_number}: ${m.module_title}</strong> (${m.teaching_hours} hrs)
+                            <p class="small mb-0">${m.topics}</p>
+                        </div>
+                    `).join('') : '<p>No modules</p>'}
+                </div>
+                
+                <div class="col-md-5">
+                    <h6><i class="fas fa-timeline"></i> Approval Timeline</h6>
+                    <div class="approval-timeline">
+                        ${approvalTimeline}
+                    </div>
+                    
+                    <hr>
+                    <h6><i class="fas fa-comment"></i> BOS Comments</h6>
+                    <div class="alert alert-info">${data.bos_comments || 'No comments provided'}</div>
+                    
+                    <hr>
+                    <h6><i class="fas fa-gavel"></i> HOD Decision</h6>
+                    <form id="hodDecisionForm">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Final Comments (Optional)</label>
+                            <textarea name="comments" class="form-control" rows="3" placeholder="Add any final remarks..."></textarea>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-success" onclick="submitHODDecision('approve')">
+                                <i class="fas fa-check-circle"></i> Approve & Generate PDF
+                            </button>
+                            <button type="button" class="btn btn-danger" onclick="submitHODDecision('reject')">
+                                <i class="fas fa-times-circle"></i> Reject - Send Back
+                            </button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        $('#finalReviewContent').html(html);
+        $('#finalReviewModal').modal('show');
+    });
+}
+
+function getApprovalTimeline(course) {
+    return `
+        <div class="timeline-item approved">
+            <strong>Course Created</strong><br>
+            <small>By ${course.created_by_username} on ${course.created_at}</small>
+        </div>
+        <div class="timeline-item approved">
+            <strong>BOS Approval</strong><br>
+            <small>By ${course.bos_approved_by_username || 'BOS Member'} on ${course.bos_approved_at || 'Pending'}</small>
+            ${course.bos_comments ? `<br><small class="text-muted">"${course.bos_comments}"</small>` : ''}
+        </div>
+        <div class="timeline-item pending">
+            <strong>HOD Review</strong><br>
+            <small>Pending your decision</small>
+        </div>
+    `;
+}
+
+function submitHODDecision(action) {
+    let comments = $('textarea[name="comments"]').val();
+    $.post(`/curriculum/hod/separate/review/${currentCourseId}/`, {
+        action: action,
+        comments: comments,
+        csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+    }, function(response) {
+        if (response.status === 'success') {
+            location.reload();
+        }
+    }).fail(function() {
+        location.reload();
+    });
+}
+
+function viewPublishedSyllabus(courseId) {
+    $.get(`/curriculum/api/course/${courseId}/full/`, function(data) {
+        let html = `
+            <div class="pdf-preview">
+                <div style="text-align: center;">
+                    <h3>SJB Institute of Technology</h3>
+                    <h5>Department of ${data.department}</h5>
+                    <hr>
+                    <h4>Course Syllabus</h4>
+                    <h5>${data.course_code} - ${data.course_title}</h5>
+                </div>
+                <table class="table table-bordered mt-3">
+                    <tr><th>Semester</th><td>${data.semester}</td><th>Credits</th><td>${data.credits}</td></tr>
+                    <tr><th>Teaching Hours</th><td colspan="3">L:${data.lecture_hours} T:${data.tutorial_hours} P:${data.practical_hours}</td></tr>
+                    <tr><th>Assessment</th><td colspan="3">CIE: ${data.cie_marks} | SEE: ${data.see_marks}</td></tr>
+                </table>
+                <h6>Course Objectives</h6>
+                <p>${data.course_objectives || 'Not specified'}</p>
+                <h6>Modules</h6>
+                ${data.modules && data.modules.length ? data.modules.map(m => `
+                    <div class="mb-2">
+                        <strong>Module ${m.module_number}: ${m.module_title}</strong> (${m.teaching_hours} hours)<br>
+                        <small>${m.topics}</small>
+                    </div>
+                `).join('') : '<p>No modules</p>'}
+                <div class="text-center mt-4">
+                    <small>Approved by HOD on ${data.hod_approved_at}</small>
+                </div>
+            </div>
+        `;
+        $('#syllabusPreviewContent').html(html);
+        $('#downloadPdfLink').attr('href', `/curriculum/download/${courseId}/`);
+        $('#viewSyllabusModal').modal('show');
+    });
+}
+
+// Chart for statistics
+{% if stats.total > 0 %}
+const ctx = document.getElementById('approvalChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['Pending', 'Approved', 'Total'],
+        datasets: [{
+            label: 'Courses',
+            data: [{{ stats.pending }}, {{ stats.approved }}, {{ stats.total }}],
+            backgroundColor: ['#ffc107', '#28a745', '#17a2b8'],
+            borderColor: ['#e0a800', '#1e7e34', '#138496'],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1 }
+            }
+        }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

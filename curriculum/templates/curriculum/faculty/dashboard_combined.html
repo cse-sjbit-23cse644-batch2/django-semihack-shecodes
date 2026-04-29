@@ -1,0 +1,872 @@
+{% extends 'curriculum/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Faculty Dashboard - Complete Control Center{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quick-action-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+    }
+    .quick-action-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .quick-action-card i {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+    }
+    .course-item {
+        background: white;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 12px;
+        transition: all 0.2s;
+        border-left: 4px solid #667eea;
+    }
+    .course-item:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transform: translateX(5px);
+    }
+    .filter-bar {
+        background: white;
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+    }
+    .modal-lg {
+        max-width: 90%;
+    }
+    .step-wizard {
+        display: flex;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+    }
+    .step-wizard .step {
+        flex: 1;
+        text-align: center;
+        padding: 12px;
+        background: #e9ecef;
+        margin: 0 3px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        position: relative;
+    }
+    .step-wizard .step.active {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+    .step-wizard .step.completed {
+        background: #28a745;
+        color: white;
+    }
+    .step-wizard .step i {
+        font-size: 1.2rem;
+        margin-right: 5px;
+    }
+    .copo-grid {
+        overflow-x: auto;
+        margin-top: 15px;
+    }
+    .copo-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+    .copo-table th, .copo-table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: center;
+    }
+    .copo-table th {
+        background: #667eea;
+        color: white;
+        font-weight: bold;
+    }
+    .copo-table select {
+        width: 65px;
+        text-align: center;
+        padding: 4px;
+    }
+    .module-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        transition: transform 0.3s;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+    }
+    .status-badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-block;
+    }
+    .status-draft { background: #6c757d; color: white; }
+    .status-pending_bos { background: #ffc107; color: black; }
+    .status-pending_hod { background: #17a2b8; color: white; }
+    .status-approved { background: #28a745; color: white; }
+    .status-revision { background: #fd7e14; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="bg-gradient-primary text-white p-4 rounded" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                <h2><i class="fas fa-chalkboard-teacher me-2"></i> Welcome, {{ request.user.get_full_name|default:request.user.username }}!</h2>
+                <p class="mb-0">Manage your courses, create syllabi, and track approvals from one unified dashboard.</p>
+                <small class="mt-2 d-block">
+                    <i class="fas fa-info-circle me-1"></i> 
+                    <strong>Pro Tip:</strong> Click "Create New Course" to start, or use the sidebar to switch to Separate Views mode.
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Action Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="quick-action-card" onclick="$('#createCourseModal').modal('show')">
+                <i class="fas fa-plus-circle"></i>
+                <h5>Create New Course</h5>
+                <small>Start building a syllabus</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="quick-action-card" style="background: linear-gradient(135deg, #f093fb, #f5576c);" onclick="window.location.href='{% url 'course_list_separate' %}'">
+                <i class="fas fa-list"></i>
+                <h5>View All Courses</h5>
+                <small>{{ stats.total }} total courses</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="quick-action-card" style="background: linear-gradient(135deg, #4facfe, #00f2fe);" onclick="window.location.href='{% url 'faculty_dashboard_separate' %}'">
+                <i class="fas fa-columns"></i>
+                <h5>Separate Views</h5>
+                <small>Switch to page mode</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="quick-action-card" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                <i class="fas fa-check-circle"></i>
+                <h5>Approved</h5>
+                <small>{{ stats.approved }} syllabi ready</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.total }}</div>
+                <div>Total Courses</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.draft }}</div>
+                <div>Drafts</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.pending_bos }}</div>
+                <div>With BOS</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.pending_hod }}</div>
+                <div>With HOD</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.approved }}</div>
+                <div>Approved</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.revision }}</div>
+                <div>Need Revision</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <div class="row">
+            <div class="col-md-4">
+                <input type="text" id="searchCourse" class="form-control" placeholder="🔍 Search by code or title...">
+            </div>
+            <div class="col-md-3">
+                <select id="filterStatus" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="draft">Draft</option>
+                    <option value="pending_bos">Pending BOS</option>
+                    <option value="pending_hod">Pending HOD</option>
+                    <option value="approved">Approved</option>
+                    <option value="revision">Revision Required</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select id="filterSemester" class="form-select">
+                    <option value="">All Semesters</option>
+                    {% for i in "12345678" %}
+                    <option value="{{ i }}">Semester {{ i }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-secondary w-100" onclick="resetFilters()">Reset Filters</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course List -->
+    <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-book me-2"></i> My Courses</h5>
+            <button class="btn btn-sm btn-primary" onclick="$('#createCourseModal').modal('show')">
+                <i class="fas fa-plus"></i> New Course
+            </button>
+        </div>
+        <div class="card-body">
+            <div id="courseList">
+                {% for course in courses %}
+                <div class="course-item" data-code="{{ course.course_code }}" data-title="{{ course.course_title }}" data-status="{{ course.status }}" data-semester="{{ course.semester }}">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <h6 class="mb-1">{{ course.course_code }} - {{ course.course_title }}</h6>
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>Semester {{ course.semester }} | 
+                                <i class="fas fa-credit-card me-1"></i>{{ course.credits }} Credits | 
+                                <i class="fas fa-clock me-1"></i>{{ course.total_hours }} Hours
+                            </small>
+                        </div>
+                        <div class="col-md-3">
+                            <span class="status-badge status-{{ course.status }}">
+                                {{ course.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="col-md-5 text-end">
+                            {% if course.status == 'draft' or course.status == 'revision' %}
+                                <button class="btn btn-sm btn-warning" onclick="editCourse({{ course.id }})">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-success" onclick="submitForApproval({{ course.id }})">
+                                    <i class="fas fa-paper-plane"></i> Submit
+                                </button>
+                            {% elif course.status == 'pending_bos' %}
+                                <button class="btn btn-sm btn-info" onclick="trackStatus({{ course.id }})">
+                                    <i class="fas fa-chart-line"></i> Track Status
+                                </button>
+                            {% elif course.status == 'approved' %}
+                                <a href="{% url 'download_pdf' course.id %}" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-file-pdf"></i> Download PDF
+                                </a>
+                            {% endif %}
+                            <button class="btn btn-sm btn-secondary" onclick="viewDetails({{ course.id }})">
+                                <i class="fas fa-eye"></i> Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5">
+                    <i class="fas fa-book-open fa-4x text-muted mb-3"></i>
+                    <h5>No courses yet</h5>
+                    <p>Click "Create New Course" to start building your first syllabus</p>
+                    <button class="btn btn-primary" onclick="$('#createCourseModal').modal('show')">
+                        <i class="fas fa-plus"></i> Create Your First Course
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CREATE COURSE MODAL -->
+<div class="modal fade" id="createCourseModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i> Create New Course</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'create_course_separate' %}" id="createCourseForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Course Code *</label>
+                            <input type="text" name="course_code" class="form-control" required placeholder="e.g., CS501">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Course Title *</label>
+                            <input type="text" name="course_title" class="form-control" required placeholder="e.g., Advanced Databases">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Department *</label>
+                            <input type="text" name="department" class="form-control" required value="Computer Science">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Semester *</label>
+                            <input type="number" name="semester" class="form-control" required min="1" max="8">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Credits *</label>
+                            <input type="number" name="credits" class="form-control" required min="1" max="6">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Lecture Hours/Week</label>
+                            <input type="number" name="lecture_hours" class="form-control" value="3">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Tutorial Hours/Week</label>
+                            <input type="number" name="tutorial_hours" class="form-control" value="0">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Practical Hours/Week</label>
+                            <input type="number" name="practical_hours" class="form-control" value="0">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Self Learning Hours/Week</label>
+                            <input type="number" name="self_learning_hours" class="form-control" value="1">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Total Hours/Semester</label>
+                            <input type="number" name="total_hours" class="form-control" value="40">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Exam Duration (Hours)</label>
+                            <input type="number" name="exam_duration" class="form-control" value="3">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">CIE Marks</label>
+                            <input type="number" name="cie_marks" class="form-control" value="50">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">SEE Marks</label>
+                            <input type="number" name="see_marks" class="form-control" value="50">
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Prerequisites</label>
+                            <textarea name="prerequisites" class="form-control" rows="2" placeholder="List any prerequisites for this course"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Course</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT COURSE MODAL -->
+<div class="modal fade" id="editCourseModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i> Edit Course: <span id="editCourseCode"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Step Wizard -->
+                <div class="step-wizard">
+                    <div class="step active" data-step="1" onclick="changeStep(1)">
+                        <i class="fas fa-info-circle"></i> Basic Info
+                    </div>
+                    <div class="step" data-step="2" onclick="changeStep(2)">
+                        <i class="fas fa-bullseye"></i> Objectives
+                    </div>
+                    <div class="step" data-step="3" onclick="changeStep(3)">
+                        <i class="fas fa-layer-group"></i> Modules
+                    </div>
+                    <div class="step" data-step="4" onclick="changeStep(4)">
+                        <i class="fas fa-chart-line"></i> CO-PO Mapping
+                    </div>
+                </div>
+
+                <!-- Step 1: Basic Info -->
+                <div id="step1Content" class="step-content">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Course Code</label>
+                            <input type="text" name="course_code" id="edit_course_code" class="form-control" readonly>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Course Title</label>
+                            <input type="text" name="course_title" id="edit_course_title" class="form-control">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label>Semester</label>
+                            <input type="number" name="semester" id="edit_semester" class="form-control">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label>Credits</label>
+                            <input type="number" name="credits" id="edit_credits" class="form-control">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label>Department</label>
+                            <input type="text" name="department" id="edit_department" class="form-control">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label>Lecture Hours</label>
+                            <input type="number" name="lecture_hours" id="edit_lecture_hours" class="form-control">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label>Tutorial Hours</label>
+                            <input type="number" name="tutorial_hours" id="edit_tutorial_hours" class="form-control">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label>Practical Hours</label>
+                            <input type="number" name="practical_hours" id="edit_practical_hours" class="form-control">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label>Total Hours</label>
+                            <input type="number" name="total_hours" id="edit_total_hours" class="form-control">
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="saveBasicInfo()">Save & Continue</button>
+                </div>
+
+                <!-- Step 2: Course Objectives -->
+                <div id="step2Content" class="step-content" style="display:none;">
+                    <div class="mb-3">
+                        <label>Course Objectives (one per line)</label>
+                        <textarea id="edit_objectives" class="form-control" rows="6" placeholder="1. To understand...&#10;2. To apply...&#10;3. To analyze..."></textarea>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="saveObjectives()">Save & Continue</button>
+                    <button type="button" class="btn btn-secondary" onclick="changeStep(1)">Back</button>
+                </div>
+
+                <!-- Step 3: Modules -->
+                <div id="step3Content" class="step-content" style="display:none;">
+                    <div id="modulesContainer"></div>
+                    <button type="button" class="btn btn-success mt-2" onclick="addModule()">
+                        <i class="fas fa-plus"></i> Add Module
+                    </button>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-primary" onclick="saveModules()">Save & Continue</button>
+                        <button type="button" class="btn btn-secondary" onclick="changeStep(2)">Back</button>
+                    </div>
+                </div>
+
+                <!-- Step 4: CO-PO Mapping -->
+                <div id="step4Content" class="step-content" style="display:none;">
+                    <div class="mb-3">
+                        <label>Number of Course Outcomes</label>
+                        <input type="number" id="num_cos" class="form-control" min="1" max="8" value="5" onchange="generateCOPOGrid()">
+                    </div>
+                    <div class="mb-3">
+                        <label>Course Outcomes (one per line)</label>
+                        <textarea id="course_outcomes" class="form-control" rows="5" placeholder="CO1: Understand core concepts&#10;CO2: Apply principles to solve problems\nCO3: Analyze and evaluate\nCO4: Design components\nCO5: Use modern tools"></textarea>
+                    </div>
+                    <div class="copo-grid" id="copoGrid"></div>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-primary" onclick="saveCOPO()">Save All Changes</button>
+                        <button type="button" class="btn btn-secondary" onclick="changeStep(3)">Back</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Submit for Approval Modal -->
+<div class="modal fade" id="submitModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Submit for Approval</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="submitForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Are you sure you want to submit this course for BOS approval?</p>
+                    <textarea name="comments" class="form-control" rows="3" placeholder="Any comments for the BOS reviewer?"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Submit for Approval</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Details Modal -->
+<div class="modal fade" id="viewDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Course Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detailsContent">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentCourseId = null;
+let modules = [];
+
+// Filter functionality
+$('#searchCourse, #filterStatus, #filterSemester').on('keyup change', function() {
+    filterCourses();
+});
+
+function filterCourses() {
+    let search = $('#searchCourse').val().toLowerCase();
+    let status = $('#filterStatus').val();
+    let semester = $('#filterSemester').val();
+    
+    $('.course-item').each(function() {
+        let code = $(this).data('code').toLowerCase();
+        let title = $(this).data('title').toLowerCase();
+        let courseStatus = $(this).data('status');
+        let courseSemester = $(this).data('semester').toString();
+        
+        let matchSearch = code.includes(search) || title.includes(search);
+        let matchStatus = !status || courseStatus === status;
+        let matchSemester = !semester || courseSemester === semester;
+        
+        if (matchSearch && matchStatus && matchSemester) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+}
+
+function resetFilters() {
+    $('#searchCourse').val('');
+    $('#filterStatus').val('');
+    $('#filterSemester').val('');
+    filterCourses();
+}
+
+// Edit Course Functions
+function editCourse(courseId) {
+    currentCourseId = courseId;
+    $.get(`/curriculum/api/course/${courseId}/`, function(data) {
+        $('#editCourseCode').text(data.course_code);
+        $('#edit_course_code').val(data.course_code);
+        $('#edit_course_title').val(data.course_title);
+        $('#edit_semester').val(data.semester);
+        $('#edit_credits').val(data.credits);
+        $('#edit_department').val(data.department);
+        $('#edit_lecture_hours').val(data.lecture_hours);
+        $('#edit_tutorial_hours').val(data.tutorial_hours);
+        $('#edit_practical_hours').val(data.practical_hours);
+        $('#edit_total_hours').val(data.total_hours);
+        $('#edit_objectives').val(data.course_objectives || '');
+        modules = data.modules || [];
+        displayModules();
+        $('#num_cos').val(data.num_cos || 5);
+        
+        let outcomesText = '';
+        if (data.course_outcomes && data.course_outcomes.length) {
+            outcomesText = data.course_outcomes.join('\n');
+        } else {
+            outcomesText = 'CO1: Understand the working of MVT based full stack web development with Django.\nCO2: Designing of Models and Forms for rapid development of web pages.\nCO3: Analyze the role of Template Inheritance and Generic views.\nCO4: Apply the Django framework libraries to render nonHTML contents.\nCO5: Perform jQuery based AJAX integration to Django Apps.';
+        }
+        $('#course_outcomes').val(outcomesText);
+        
+        window.copoMappingData = data.copo_mapping || {};
+        generateCOPOGrid();
+        changeStep(1);
+        $('#editCourseModal').modal('show');
+    });
+}
+
+function changeStep(step) {
+    $('.step-content').hide();
+    $(`#step${step}Content`).show();
+    $('.step').removeClass('active');
+    $(`.step[data-step="${step}"]`).addClass('active');
+}
+
+function saveBasicInfo() {
+    let data = {
+        course_code: $('#edit_course_code').val(),
+        course_title: $('#edit_course_title').val(),
+        semester: $('#edit_semester').val(),
+        credits: $('#edit_credits').val(),
+        department: $('#edit_department').val(),
+        lecture_hours: $('#edit_lecture_hours').val(),
+        tutorial_hours: $('#edit_tutorial_hours').val(),
+        practical_hours: $('#edit_practical_hours').val(),
+        total_hours: $('#edit_total_hours').val()
+    };
+    
+    $.post(`/curriculum/api/course/${currentCourseId}/basic/`, data, function() {
+        changeStep(2);
+    });
+}
+
+function saveObjectives() {
+    $.post(`/curriculum/api/course/${currentCourseId}/objectives/`, {
+        objectives: $('#edit_objectives').val()
+    }, function() {
+        changeStep(3);
+    });
+}
+
+function addModule() {
+    let moduleNum = modules.length + 1;
+    modules.push({
+        module_number: moduleNum,
+        module_title: '',
+        topics: '',
+        teaching_hours: 0
+    });
+    displayModules();
+}
+
+function removeModule(index) {
+    modules.splice(index, 1);
+    modules.forEach((m, i) => m.module_number = i + 1);
+    displayModules();
+}
+
+function displayModules() {
+    let html = '';
+    modules.forEach((module, index) => {
+        html += `
+            <div class="module-card">
+                <h6>Module ${module.module_number}</h6>
+                <div class="row">
+                    <div class="col-md-12 mb-2">
+                        <input type="text" class="form-control" placeholder="Module Title" 
+                               value="${escapeHtml(module.module_title)}" onchange="updateModule(${index}, 'title', this.value)">
+                    </div>
+                    <div class="col-md-12 mb-2">
+                        <textarea class="form-control" rows="2" placeholder="Topics covered" 
+                                  onchange="updateModule(${index}, 'topics', this.value)">${escapeHtml(module.topics)}</textarea>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="number" class="form-control" placeholder="Teaching Hours" 
+                               value="${module.teaching_hours}" onchange="updateModule(${index}, 'hours', this.value)">
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-danger btn-sm" onclick="removeModule(${index})">Remove</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    $('#modulesContainer').html(html);
+}
+
+function updateModule(index, field, value) {
+    if (field === 'title') modules[index].module_title = value;
+    if (field === 'topics') modules[index].topics = value;
+    if (field === 'hours') modules[index].teaching_hours = parseInt(value);
+}
+
+function saveModules() {
+    $.post(`/curriculum/api/course/${currentCourseId}/modules/`, {
+        modules: JSON.stringify(modules)
+    }, function() {
+        changeStep(4);
+    });
+}
+
+// CO-PO Matrix Functions - Shows 1,2,3 values
+function generateCOPOGrid() {
+    let numCos = parseInt($('#num_cos').val()) || 5;
+    
+    let html = '<div class="table-responsive">';
+    html += '<table class="table table-bordered" style="font-size:12px;">';
+    html += '<thead style="background-color:#667eea; color:white;">';
+    html += '<tr>';
+    html += '<th style="text-align:center; padding:8px;">CO/PO</th>';
+    for (let po = 1; po <= 12; po++) {
+        html += `<th style="text-align:center; padding:8px;">PO${po}</th>`;
+    }
+    for (let pso = 1; pso <= 3; pso++) {
+        html += `<th style="text-align:center; padding:8px;">PSO${pso}</th>`;
+    }
+    html += '</tr></thead><tbody>';
+    
+    for (let co = 1; co <= numCos; co++) {
+        html += `<tr>`;
+        html += `<td style="text-align:center; background-color:#f0f0f0; padding:8px;"><strong>CO${co}</strong></td>`;
+        
+        for (let po = 1; po <= 12; po++) {
+            let savedValue = 0;
+            if (window.copoMappingData && window.copoMappingData[`CO${co}`]) {
+                savedValue = window.copoMappingData[`CO${co}`][`PO${po}`] || 0;
+            }
+            html += `<td style="text-align:center; padding:4px;">
+                <select class="form-select form-select-sm copo-select" data-co="${co}" data-type="PO" data-po="${po}" style="width:65px; margin:0 auto;">
+                    <option value="0" ${savedValue == 0 ? 'selected' : ''}>-</option>
+                    <option value="1" ${savedValue == 1 ? 'selected' : ''}>1</option>
+                    <option value="2" ${savedValue == 2 ? 'selected' : ''}>2</option>
+                    <option value="3" ${savedValue == 3 ? 'selected' : ''}>3</option>
+                </select>
+               </td>`;
+        }
+        
+        for (let pso = 1; pso <= 3; pso++) {
+            let savedValue = 0;
+            if (window.copoMappingData && window.copoMappingData[`CO${co}`]) {
+                savedValue = window.copoMappingData[`CO${co}`][`PSO${pso}`] || 0;
+            }
+            html += `<td style="text-align:center; padding:4px;">
+                <select class="form-select form-select-sm copo-select" data-co="${co}" data-type="PSO" data-ps="${pso}" style="width:65px; margin:0 auto;">
+                    <option value="0" ${savedValue == 0 ? 'selected' : ''}>-</option>
+                    <option value="1" ${savedValue == 1 ? 'selected' : ''}>1</option>
+                    <option value="2" ${savedValue == 2 ? 'selected' : ''}>2</option>
+                    <option value="3" ${savedValue == 3 ? 'selected' : ''}>3</option>
+                </select>
+               </td>`;
+        }
+        html += '</tr>';
+    }
+    html += '</tbody></table></div>';
+    $('#copoGrid').html(html);
+    
+    $('.copo-select').on('change', function() {
+        let val = $(this).val();
+        if (val == '3') $(this).css('background-color', '#d4edda');
+        else if (val == '2') $(this).css('background-color', '#fff3cd');
+        else if (val == '1') $(this).css('background-color', '#f8d7da');
+        else $(this).css('background-color', 'white');
+    });
+}
+
+function saveCOPO() {
+    let numCos = parseInt($('#num_cos').val()) || 5;
+    let courseOutcomes = $('#course_outcomes').val();
+    let mapping = {};
+    
+    $('.copo-select[data-type="PO"]').each(function() {
+        let co = $(this).data('co');
+        let po = $(this).data('po');
+        let value = parseInt($(this).val());
+        if (!mapping[`CO${co}`]) mapping[`CO${co}`] = {};
+        mapping[`CO${co}`][`PO${po}`] = value;
+    });
+    
+    $('.copo-select[data-type="PSO"]').each(function() {
+        let co = $(this).data('co');
+        let ps = $(this).data('ps');
+        let value = parseInt($(this).val());
+        if (!mapping[`CO${co}`]) mapping[`CO${co}`] = {};
+        mapping[`CO${co}`][`PSO${ps}`] = value;
+    });
+    
+    console.log("Saving CO-PO Mapping:", mapping);
+    
+    $.ajax({
+        url: `/curriculum/api/course/${currentCourseId}/copo/`,
+        type: 'POST',
+        data: JSON.stringify({
+            num_cos: numCos,
+            course_outcomes: courseOutcomes,
+            copo_mapping: JSON.stringify(mapping)
+        }),
+        contentType: 'application/json',
+        headers: {
+            'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+        },
+        success: function(response) {
+            if (response.status === 'success') {
+                $('#editCourseModal').modal('hide');
+                location.reload();
+            } else {
+                alert('Error saving CO-PO mapping: ' + (response.message || 'Unknown error'));
+            }
+        },
+        error: function(xhr) {
+            console.log("Error:", xhr.responseText);
+            alert('Error saving CO-PO mapping. Please try again.');
+        }
+    });
+}
+
+function submitForApproval(courseId) {
+    $('#submitForm').attr('action', `/curriculum/faculty/separate/submit/${courseId}/`);
+    $('#submitModal').modal('show');
+}
+
+function viewDetails(courseId) {
+    $.get(`/curriculum/api/course/${courseId}/`, function(data) {
+        let html = `<h5>${data.course_code} - ${data.course_title}</h5><hr>
+            <p><strong>Semester:</strong> ${data.semester}</p>
+            <p><strong>Credits:</strong> ${data.credits}</p>
+            <p><strong>Status:</strong> <span class="status-badge status-${data.status}">${data.status_display}</span></p>
+            <h6>Course Objectives:</h6><p>${data.course_objectives || 'Not specified'}</p>
+            <h6>Modules:</h6>
+            ${data.modules && data.modules.length ? data.modules.map(m => `<p><strong>Module ${m.module_number}:</strong> ${m.module_title} (${m.teaching_hours} hours)</p>`).join('') : '<p>No modules added</p>'}`;
+        $('#detailsContent').html(html);
+        $('#viewDetailsModal').modal('show');
+    });
+}
+
+function trackStatus(courseId) {
+    $.get(`/curriculum/api/course/${courseId}/status/`, function(data) {
+        let html = `<h5>Approval Timeline</h5><hr>`;
+        if (data.logs && data.logs.length > 0) {
+            data.logs.forEach(log => {
+                html += `<p><i class="fas fa-clock"></i> ${log.timestamp}<br><strong>${log.action}</strong><br>${log.details}</p><hr>`;
+            });
+        } else {
+            html += '<p>No approval history yet.</p>';
+        }
+        $('#detailsContent').html(html);
+        $('#viewDetailsModal').modal('show');
+    });
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+$(document).ready(function() {
+    $('#num_cos').on('change', function() { 
+        generateCOPOGrid(); 
+    });
+});
+</script>
+{% endblock %}

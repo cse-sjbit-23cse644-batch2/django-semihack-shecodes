@@ -1,0 +1,72 @@
+{% extends 'curriculum/base.html' %}
+
+{% block title %}Audit Trail{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-history me-2"></i> Audit Trail</h2>
+        <a href="{% url 'admin_bos_dashboard_separate' %}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Complete Approval History</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Course Code</th>
+                            <th>Action</th>
+                            <th>User</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+                            <td><strong>{{ log.course_code }}</strong></td>
+                            <td>
+                                <span class="badge 
+                                    {% if 'APPROVE' in log.action %}bg-success
+                                    {% elif 'REJECT' in log.action %}bg-danger
+                                    {% elif 'SUBMIT' in log.action %}bg-info
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ log.get_action_display }}
+                                </span>
+                            </td>
+                            <td>{{ log.user.get_full_name|default:log.user.username }}</td>
+                            <td>{{ log.comments|truncatechars:100 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center">No audit logs found</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if logs.has_other_pages %}
+            <nav class="mt-3">
+                <ul class="pagination">
+                    {% if logs.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ logs.previous_page_number }}">Previous</a></li>
+                    {% endif %}
+                    {% for num in logs.paginator.page_range %}
+                    <li class="page-item {% if logs.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+                    {% if logs.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ logs.next_page_number }}">Next</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends 'curriculum/base.html' %}
+
+{% block title %}Final Review - {{ course.course_code }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-gavel me-2"></i> Final Review: {{ course.course_code }}</h2>
+        <a href="{% url 'hod_dashboard_separate' %}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Course Details -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Course Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered">
+                        <tr><th>Course Code</th><td>{{ course.course_code }}</td></tr>
+                        <tr><th>Course Title</th><td>{{ course.course_title }}</td></tr>
+                        <tr><th>Department</th><td>{{ course.department }}</td></tr>
+                        <tr><th>Semester</th><td>{{ course.semester }}</td></tr>
+                        <tr><th>Credits</th><td>{{ course.credits }}</td></tr>
+                        <tr><th>Teaching Hours</th><td>L:{{ course.lecture_hours }} T:{{ course.tutorial_hours }} P:{{ course.practical_hours }}</td></tr>
+                        <tr><th>Total Hours</th><td>{{ course.total_hours }}</td></tr>
+                        <tr><th>Assessment</th><td>CIE: {{ course.cie_marks }} | SEE: {{ course.see_marks }}</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Course Objectives -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Course Objectives</h5>
+                </div>
+                <div class="card-body">
+                    {{ course.course_objectives|linebreaks|default:"Not specified" }}
+                </div>
+            </div>
+
+            <!-- Modules -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Modules</h5>
+                </div>
+                <div class="card-body">
+                    {% for module in course.modules %}
+                    <div class="border-bottom mb-3 pb-3">
+                        <h6>Module {{ module.module_number }}: {{ module.module_title }} ({{ module.teaching_hours }} hours)</h6>
+                        <p>{{ module.topics|linebreaks }}</p>
+                    </div>
+                    {% empty %}
+                    <p>No modules added</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- CO-PO Mapping -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">CO-PO Mapping</h5>
+                </div>
+                <div class="card-body" style="overflow-x: auto;">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr><th>CO/PO</th>{% for po in po_list %}<th>{{ po }}</th>{% endfor %}</tr>
+                        </thead>
+                        <tbody>
+                            {% for co_num in "12345678"|slice:course.num_cos %}
+                            <tr>
+                                <th>CO{{ co_num }}</th>
+                                {% for po in po_list %}
+                                <td>
+                                    {% with val=course.copo_mapping|get_item:"CO"|add:co_num|get_item:po %}
+                                        {% if val == 3 %}H{% elif val == 2 %}M{% elif val == 1 %}L{% else %}-{% endif %}
+                                    {% endwith %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Approval Timeline -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Approval Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="mb-3">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <strong>Created by Faculty</strong><br>
+                            <small>{{ course.created_by.get_full_name }} on {{ course.created_at|date:"Y-m-d H:i" }}</small>
+                        </div>
+                        <div class="mb-3">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <strong>BOS Approved</strong><br>
+                            <small>{{ course.bos_approved_by.get_full_name|default:"BOS Member" }} on {{ course.bos_approved_at|date:"Y-m-d H:i"|default:"Pending" }}</small>
+                            {% if course.bos_comments %}
+                            <br><small class="text-muted">Comment: {{ course.bos_comments }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <i class="fas fa-clock text-warning"></i>
+                            <strong>HOD Review</strong><br>
+                            <small>Pending your decision</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Decision Form -->
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">Final Decision</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Comments / Remarks</label>
+                            <textarea name="comments" class="form-control" rows="4" placeholder="Add your final remarks..."></textarea>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" name="action" value="approve" class="btn btn-success btn-lg">
+                                <i class="fas fa-check-circle"></i> Approve & Generate PDF
+                            </button>
+                            <button type="submit" name="action" value="reject" class="btn btn-danger">
+                                <i class="fas fa-times-circle"></i> Reject - Send for Revision
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

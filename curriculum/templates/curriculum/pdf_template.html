@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ course.course_code }} - Course Syllabus</title>
+    <style>
+        /* Page Configuration */
+        @page {
+            size: A4;
+            margin: 2.5cm 2cm 2cm 2cm;
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9pt;
+                font-family: Arial, sans-serif;
+            }
+            @top-center {
+                content: "SJB Institute of Technology - Autonomous Syllabus";
+                font-size: 9pt;
+                font-family: Arial, sans-serif;
+            }
+        }
+        
+        /* Base Styles */
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #000000;
+        }
+        
+        /* Header Section */
+        .university-header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 10px;
+        }
+        
+        .university-name {
+            font-size: 18pt;
+            font-weight: bold;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .university-tagline {
+            font-size: 10pt;
+            margin: 3px 0;
+            font-style: italic;
+        }
+        
+        .department-name {
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .autonomous-badge {
+            font-size: 10pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 5px 0;
+        }
+        
+        /* Course Title Section */
+        .course-title-section {
+            text-align: center;
+            margin: 25px 0 15px 0;
+            padding: 10px;
+            background-color: #f5f5f5;
+        }
+        
+        .course-code {
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .course-title {
+            font-size: 16pt;
+            font-weight: bold;
+            margin: 5px 0;
+            text-transform: uppercase;
+        }
+        
+        /* Information Tables */
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 10pt;
+        }
+        
+        .info-table th, .info-table td {
+            border: 1px solid #000000;
+            padding: 8px;
+            vertical-align: top;
+        }
+        
+        .info-table th {
+            background-color: #e8e8e8;
+            font-weight: bold;
+            width: 30%;
+            text-align: left;
+        }
+        
+        .info-table td {
+            width: 70%;
+        }
+        
+        /* Teaching Hours Table */
+        .hours-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 10pt;
+        }
+        
+        .hours-table th, .hours-table td {
+            border: 1px solid #000000;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .hours-table th {
+            background-color: #e0e0e0;
+            font-weight: bold;
+        }
+        
+        /* Section Titles */
+        .section-title {
+            font-size: 13pt;
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            background-color: #d3d3d3;
+            padding: 6px 10px;
+            border-left: 4px solid #2c3e50;
+        }
+        
+        .subsection-title {
+            font-size: 11pt;
+            font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            border-bottom: 1px solid #999;
+            padding-bottom: 3px;
+        }
+        
+        /* Module Table */
+        .module-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 10pt;
+        }
+        
+        .module-table th, .module-table td {
+            border: 1px solid #000000;
+            padding: 10px;
+            vertical-align: top;
+        }
+        
+        .module-table th {
+            background-color: #e0e0e0;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .module-title-row {
+            background-color: #f0f0f0;
+        }
+        
+        /* CO-PO Matrix Table */
+        .copo-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 8pt;
+        }
+        
+        .copo-table th, .copo-table td {
+            border: 1px solid #000000;
+            padding: 5px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        .copo-table th {
+            background-color: #2c3e50;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .copo-table .co-column {
+            background-color: #e8e8e8;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .co-po-value-H {
+            background-color: #d4edda;
+        }
+        
+        .co-po-value-M {
+            background-color: #fff3cd;
+        }
+        
+        .co-po-value-L {
+            background-color: #f8d7da;
+        }
+        
+        /* Text Lists */
+        .objectives-list, .outcomes-list {
+            margin: 5px 0;
+            padding-left: 25px;
+        }
+        
+        .objectives-list li, .outcomes-list li {
+            margin: 3px 0;
+        }
+        
+        /* Teaching Methods */
+        .teaching-methods {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .method-badge {
+            background-color: #e8e8e8;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 9pt;
+        }
+        
+        /* References Section */
+        .references-list {
+            margin: 5px 0;
+            padding-left: 20px;
+        }
+        
+        .references-list li {
+            margin: 3px 0;
+        }
+        
+        /* Footer Section */
+        .footer-section {
+            margin-top: 40px;
+            border-top: 1px solid #cccccc;
+            padding-top: 20px;
+        }
+        
+        .signature-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .signature-box {
+            text-align: center;
+            width: 30%;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #000000;
+            margin-top: 40px;
+            padding-top: 5px;
+            width: 100%;
+        }
+        
+        .footer-note {
+            font-size: 8pt;
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+        
+        /* Page Break */
+        .page-break {
+            page-break-before: always;
+        }
+        
+        /* Utility Classes */
+        .text-center {
+            text-align: center;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .mb-10 {
+            margin-bottom: 10px;
+        }
+        
+        .mt-20 {
+            margin-top: 20px;
+        }
+        
+        .bold {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="university-header">
+        <div class="university-name">SJB INSTITUTE OF TECHNOLOGY</div>
+        <div class="university-tagline">(Approved by AICTE, Accredited by NBA & NAAC)</div>
+        <div class="department-name">Department of {{ course.department }}</div>
+        <div class="autonomous-badge">(Autonomous Institute under VTU)</div>
+    </div>
+
+    <!-- Course Title -->
+    <div class="course-title-section">
+        <div class="course-code">{{ course.course_code }}</div>
+        <div class="course-title">{{ course.course_title }}</div>
+    </div>
+
+    <!-- Basic Information Table -->
+    <table class="info-table">
+        <tr>
+            <th>Programme</th>
+            <td>Bachelor of Engineering (B.E)</td>
+            <th>Semester</th>
+            <td>{{ course.semester }}</td>
+        </tr>
+        <tr>
+            <th>Category</th>
+            <td>{% if course.credits >= 4 %}Core Course{% else %}Elective Course{% endif %}</td>
+            <th>Credits</th>
+            <td>{{ course.credits }}</td>
+        </tr>
+        <tr>
+            <th>Course Type</th>
+            <td>Theory with Practical</td>
+            <th>Total Hours</th>
+            <td>{{ course.total_hours }} Hours/Semester</td>
+        </tr>
+        <tr>
+            <th>CIE Marks</th>
+            <td>{{ course.cie_marks }}</td>
+            <th>SEE Marks</th>
+            <td>{{ course.see_marks }}</td>
+        </tr>
+        <tr>
+            <th>Exam Duration</th>
+            <td colspan="3">{{ course.exam_duration }} Hours</td>
+        </tr>
+        {% if course.prerequisites %}
+        <tr>
+            <th>Prerequisites</th>
+            <td colspan="3">{{ course.prerequisites }}</td>
+        </tr>
+        {% endif %}
+    </table>
+
+    <!-- Teaching Hours Breakdown -->
+    <div class="subsection-title">📊 Teaching Hours Distribution</div>
+    <table class="hours-table">
+        <thead>
+            <tr>
+                <th>Lecture (L)</th>
+                <th>Tutorial (T)</th>
+                <th>Practical (P)</th>
+                <th>Self Study (S)</th>
+                <th>Total/Week</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>{{ course.lecture_hours }}</strong> hrs</td>
+                <td><strong>{{ course.tutorial_hours }}</strong> hrs</td>
+                <td><strong>{{ course.practical_hours }}</strong> hrs</td>
+                <td><strong>{{ course.self_learning_hours }}</strong> hrs</td>
+                <td><strong>{{ course.lecture_hours|add:course.tutorial_hours|add:course.practical_hours|add:course.self_learning_hours }}</strong> hrs</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Course Objectives -->
+    <div class="section-title">🎯 COURSE OBJECTIVES</div>
+    <div class="objectives-list">
+        {% with objectives=course.course_objectives|split:"" %}
+            {% for objective in course.course_objectives|split:"\n" %}
+                {% if objective|length > 2 %}
+                    <p>{{ objective|safe }}</p>
+                {% endif %}
+            {% endfor %}
+        {% endwith %}
+        {% if not course.course_objectives %}
+            <p>To be specified by the faculty.</p>
+        {% endif %}
+    </div>
+
+    <!-- Modules Section -->
+    <div class="section-title">📚 MODULE-WISE CONTENT</div>
+    <table class="module-table">
+        <thead>
+            <tr>
+                <th width="8%">Module No</th>
+                <th width="32%">Module Title</th>
+                <th width="45%">Topics Covered</th>
+                <th width="15%">Teaching Hours</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for module in course.modules %}
+            <tr>
+                <td class="text-center"><strong>{{ module.module_number }}</strong></td>
+                <td><strong>{{ module.module_title }}</strong></td>
+                <td>{{ module.topics|linebreaksbr|safe }}</td>
+                <td class="text-center">{{ module.teaching_hours }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center">No modules defined yet</td>
+            </tr>
+            {% endfor %}
+            <tr class="module-title-row">
+                <td colspan="3" class="text-right"><strong>Total Teaching Hours:</strong></td>
+                <td class="text-center"><strong>
+                    {% with total=0 %}
+                        {% for module in course.modules %}
+                            {% with total=total|add:module.teaching_hours %}{% endwith %}
+                        {% endfor %}
+                        {% for module in course.modules %}
+                            {{ module.teaching_hours }}
+                        {% endfor %}
+                    {% endwith %}
+                </strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Page Break for CO-PO Matrix if needed -->
+    {% if course.copo_mapping and course.num_cos > 3 %}
+    <div class="page-break"></div>
+    {% endif %}
+
+    <!-- CO-PO Matrix Section -->
+    <div class="section-title">📊 CO-PO MAPPING MATRIX</div>
+    <div class="subsection-title">Correlation Levels: <span class="co-po-value-H">H=3 (High)</span> | <span class="co-po-value-M">M=2 (Medium)</span> | <span class="co-po-value-L">L=1 (Low)</span></div>
+    
+    <table class="copo-table">
+        <thead>
+            <tr>
+                <th rowspan="2" width="8%">CO/PO</th>
+                <th colspan="12">PROGRAM OUTCOMES (POs)</th>
+            </tr>
+            <tr>
+                {% for po_num in "123456789012"|make_list %}
+                <th width="7%">PO{{ po_num }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for co_num in "12345678"|slice:course.num_cos %}
+            <tr>
+                <td class="co-column">CO{{ co_num }}</td>
+                {% for po_num in "123456789012"|make_list %}
+                    {% with po_key="PO"|add:po_num %}
+                    {% with co_key="CO"|add:co_num %}
+                    {% with value=course.copo_mapping|get_item:co_key|get_item:po_key %}
+                    <td class="{% if value == 3 %}co-po-value-H{% elif value == 2 %}co-po-value-M{% elif value == 1 %}co-po-value-L{% endif %} text-center">
+                        {% if value == 3 %}H{% elif value == 2 %}M{% elif value == 1 %}L{% else %}-{% endif %}
+                    </td>
+                    {% endwith %}
+                    {% endwith %}
+                    {% endwith %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Course Outcomes -->
+    <div class="section-title">📖 COURSE OUTCOMES (COs)</div>
+    <div class="outcomes-list">
+        {% for co in course.course_outcomes %}
+            <p><strong>CO{{ forloop.counter }}:</strong> {{ co }}</p>
+        {% empty %}
+            <p>To be specified by the faculty.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Hands-on Exercises -->
+    {% if course.hands_on_exercises %}
+    <div class="section-title">🔧 HANDS-ON EXERCISES</div>
+    <ul class="objectives-list">
+        {% for exercise in course.hands_on_exercises %}
+        <li><strong>{{ exercise.title }}</strong> - {{ exercise.description }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <!-- Self-Learning Topics -->
+    {% if course.self_learning_topics %}
+    <div class="section-title">📖 SELF-LEARNING TOPICS</div>
+    <ul class="references-list">
+        {% for topic in course.self_learning_topics %}
+        <li><strong>{{ topic.topic }}</strong> - {{ topic.resources }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <!-- Textbooks -->
+    <div class="section-title">📚 TEXTBOOKS</div>
+    <ul class="references-list">
+        {% for book in course.textbooks %}
+        <li><strong>{{ book.title }}</strong> by {{ book.author }}{% if book.edition %} ({{ book.edition }} edition){% endif %}{% if book.publisher %} - {{ book.publisher }}{% endif %}</li>
+        {% empty %}
+        <li>To be specified by the faculty.</li>
+        {% endfor %}
+    </ul>
+
+    <!-- References -->
+    <div class="section-title">📖 REFERENCE BOOKS</div>
+    <ul class="references-list">
+        {% for ref in course.references %}
+        <li><strong>{{ ref.title }}</strong> by {{ ref.author }}</li>
+        {% empty %}
+        <li>To be specified by the faculty.</li>
+        {% endfor %}
+    </ul>
+
+    <!-- Teaching-Learning Process -->
+    <div class="section-title">🎓 TEACHING-LEARNING PROCESS</div>
+    <div class="teaching-methods">
+        <span class="method-badge">📝 Chalk & Talk</span>
+        <span class="method-badge">💻 PPT Presentations</span>
+        <span class="method-badge">📊 Case Studies</span>
+        <span class="method-badge">🤝 Group Discussions</span>
+        <span class="method-badge">📹 Video Lectures</span>
+        <span class="method-badge">🔬 Hands-on Sessions</span>
+        <span class="method-badge">📝 Assignments</span>
+        <span class="method-badge">🗣️ Seminars</span>
+    </div>
+
+    <!-- Assessment Methods -->
+    <div class="subsection-title">📝 ASSESSMENT METHODS</div>
+    <div class="teaching-methods">
+        <span class="method-badge">📝 CIE - 50 Marks</span>
+        <span class="method-badge">📄 SEE - 50 Marks</span>
+        <span class="method-badge">📋 Quizzes</span>
+        <span class="method-badge">📊 Assignments</span>
+        <span class="method-badge">🎤 Viva Voce</span>
+        <span class="method-badge">📑 Project Work</span>
+    </div>
+
+    <!-- Footer with Signatures -->
+    <div class="footer-section">
+        <div class="signature-row">
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div><strong>Course Coordinator</strong></div>
+                <div class="footer-note">{{ course.created_by.get_full_name|default:"Faculty Member" }}</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div><strong>BOS Chairperson</strong></div>
+                <div class="footer-note">{{ course.bos_approved_by.get_full_name|default:"BOS Member" }}</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div><strong>HOD</strong></div>
+                <div class="footer-note">Dr. Head of Department</div>
+            </div>
+        </div>
+        
+        <div class="footer-note mt-20">
+            <hr>
+            <p>© SJB Institute of Technology - Autonomous Syllabus | Generated on {{ generated_date }} | Approved by HOD</p>
+            <p><strong>*** This document is the official syllabus and is subject to periodic review ***</strong></p>
+        </div>
+    </div>
+
+</body>
+</html>

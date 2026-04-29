@@ -1,0 +1,82 @@
+{% extends 'curriculum/base.html' %}
+
+{% block title %}Faculty Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-tachometer-alt me-2"></i> Faculty Dashboard</h2>
+        <div>
+            <a href="{% url 'faculty_dashboard_combined' %}" class="btn btn-outline-primary me-2">
+                <i class="fas fa-columns"></i> Switch to Combined View
+            </a>
+            <a href="{% url 'create_course_separate' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create New Course
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.total }}</div>
+                <div>Total Courses</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.draft }}</div>
+                <div>Drafts</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.pending_bos }}</div>
+                <div>With BOS</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.approved }}</div>
+                <div>Approved</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Courses -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">My Courses</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr><th>Code</th><th>Title</th><th>Semester</th><th>Status</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for course in courses|slice:":10" %}
+                        <tr>
+                            <td>{{ course.course_code }}</td>
+                            <td>{{ course.course_title }}</td>
+                            <td>{{ course.semester }}</td>
+                            <td><span class="status-badge status-{{ course.status }}">{{ course.get_status_display }}</span></td>
+                            <td>
+                                <a href="{% url 'edit_course_separate' course.id %}" class="btn btn-sm btn-warning">Edit</a>
+                                {% if course.status == 'draft' %}
+                                <a href="{% url 'submit_approval_separate' course.id %}" class="btn btn-sm btn-success">Submit</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center">No courses yet. <a href="{% url 'create_course_separate' %}">Create one</a></td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <a href="{% url 'course_list_separate' %}" class="btn btn-link">View All Courses →</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

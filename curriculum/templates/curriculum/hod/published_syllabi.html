@@ -1,0 +1,195 @@
+{% extends 'curriculum/base.html' %}
+
+{% block title %}Published Syllabi{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-file-pdf me-2"></i> Published Syllabi</h2>
+        <a href="{% url 'hod_dashboard_separate' %}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-white">
+            <div class="row">
+                <div class="col-md-4">
+                    <input type="text" id="searchPublished" class="form-control" placeholder="Search by code or title...">
+                </div>
+                <div class="col-md-3">
+                    <select id="semesterFilter" class="form-select">
+                        <option value="">All Semesters</option>
+                        {% for i in "12345678" %}
+                        <option value="{{ i }}">Semester {{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="departmentFilter" class="form-select">
+                        <option value="">All Departments</option>
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="Information Science">Information Science</option>
+                        <option value="Electronics">Electronics</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-secondary w-100" onclick="resetFilters()">Reset</button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="publishedTable">
+                    <thead>
+                        <tr>
+                            <th>Course Code</th>
+                            <th>Course Title</th>
+                            <th>Department</th>
+                            <th>Semester</th>
+                            <th>Credits</th>
+                            <th>Faculty</th>
+                            <th>Approved On</th>
+                            <th>PDF</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in courses %}
+                        <tr class="course-row" data-code="{{ course.course_code }}" data-title="{{ course.course_title }}" data-semester="{{ course.semester }}" data-department="{{ course.department }}">
+                            <td><strong>{{ course.course_code }}</strong></td>
+                            <td>{{ course.course_title }}</td>
+                            <td>{{ course.department }}</td>
+                            <td>{{ course.semester }}</td>
+                            <td>{{ course.credits }}</td>
+                            <td>{{ course.created_by.get_full_name }}</td>
+                            <td>{{ course.hod_approved_at|date:"Y-m-d" }}</td>
+                            <td>
+                                {% if course.pdf_file %}
+                                <span class="badge bg-success">✓ Generated</span>
+                                {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'download_pdf' course.id %}" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-download"></i> PDF
+                                </a>
+                                <button class="btn btn-sm btn-info" onclick="viewSyllabus({{ course.id }})">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="9" class="text-center py-5">No published syllabi yet</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if courses.has_other_pages %}
+            <nav class="mt-3">
+                <ul class="pagination">
+                    {% if courses.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ courses.previous_page_number }}">Previous</a></li>
+                    {% endif %}
+                    {% for num in courses.paginator.page_range %}
+                    <li class="page-item {% if courses.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+                    {% if courses.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ courses.next_page_number }}">Next</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- View Syllabus Modal -->
+<div class="modal fade" id="syllabusModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Syllabus Preview</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="syllabusContent" style="max-height: 70vh; overflow-y: auto;"></div>
+            <div class="modal-footer">
+                <a href="#" id="modalDownloadLink" class="btn btn-danger">Download PDF</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterTable() {
+    let search = $('#searchPublished').val().toLowerCase();
+    let semester = $('#semesterFilter').val();
+    let department = $('#departmentFilter').val();
+    
+    $('#publishedTable tbody tr').each(function() {
+        let code = $(this).data('code').toLowerCase();
+        let title = $(this).data('title').toLowerCase();
+        let rowSemester = $(this).data('semester').toString();
+        let rowDepartment = $(this).data('department');
+        
+        let matchSearch = code.includes(search) || title.includes(search);
+        let matchSemester = !semester || rowSemester === semester;
+        let matchDepartment = !department || rowDepartment === department;
+        
+        if (matchSearch && matchSemester && matchDepartment) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+}
+
+function resetFilters() {
+    $('#searchPublished').val('');
+    $('#semesterFilter').val('');
+    $('#departmentFilter').val('');
+    filterTable();
+}
+
+$('#searchPublished, #semesterFilter, #departmentFilter').on('keyup change', filterTable);
+
+function viewSyllabus(courseId) {
+    $.get(`/curriculum/api/course/${courseId}/full/`, function(data) {
+        let html = `
+            <div style="font-family: 'Times New Roman', serif;">
+                <div style="text-align: center;">
+                    <h3>SJB Institute of Technology</h3>
+                    <h5>Department of ${data.department}</h5>
+                    <hr>
+                    <h4>Course Syllabus</h4>
+                    <h5>${data.course_code} - ${data.course_title}</h5>
+                </div>
+                <table class="table table-bordered mt-3">
+                    <tr><th>Semester</th><td>${data.semester}</td><th>Credits</th><td>${data.credits}</td></tr>
+                    <tr><th>Teaching Hours</th><td colspan="3">L:${data.lecture_hours} T:${data.tutorial_hours} P:${data.practical_hours}</td></tr>
+                    <tr><th>Assessment</th><td colspan="3">CIE: ${data.cie_marks} | SEE: ${data.see_marks}</td></tr>
+                </table>
+                <h6>Course Objectives</h6>
+                <p>${data.course_objectives || 'Not specified'}</p>
+                <h6>Modules</h6>
+                ${data.modules && data.modules.length ? data.modules.map(m => `
+                    <div class="mb-2">
+                        <strong>Module ${m.module_number}: ${m.module_title}</strong> (${m.teaching_hours} hours)<br>
+                        <small>${m.topics}</small>
+                    </div>
+                `).join('') : '<p>No modules</p>'}
+                <div class="text-center mt-4">
+                    <small>Approved by HOD on ${data.hod_approved_at}</small>
+                </div>
+            </div>
+        `;
+        $('#syllabusContent').html(html);
+        $('#modalDownloadLink').attr('href', `/curriculum/download/${courseId}/`);
+        $('#syllabusModal').modal('show');
+    });
+}
+</script>
+{% endblock %}
